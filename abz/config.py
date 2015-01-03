@@ -13,8 +13,10 @@ import hashlib
 import sqlite3
 import shutil
 import tempfile
+import textwrap
 
 from abz import compat
+from .fingerprint import has_acoustid
 
 CONFIG_FILE = "abzsubmit.conf"
 OLDCONFIGFILE = os.path.join(os.path.expanduser("~"), ".abzsubmit.conf")
@@ -57,12 +59,14 @@ def _create_profile_file(essentia_build_sha):
         It's yaml, but we're going to write it manually so that
         we don't need to depend on libyaml
     """
-    template = """requireMbid: true
-indent: 0
-mergeValues:
-    metadata:
-        version:
-            essentia_build_sha: %s"""
+    template = textwrap.dedent("""
+    requireMbid: {}
+    indent: 0
+    mergeValues:
+        metadata:
+            version:
+                essentia_build_sha: %s
+    """.format('false' if has_acoustid else 'true')).strip()
     profile = template % essentia_build_sha
     fd, tmpname = tempfile.mkstemp(suffix='.yaml')
     fp = os.fdopen(fd, "w")

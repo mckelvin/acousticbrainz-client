@@ -18,6 +18,7 @@ except ImportError:
     from .vendor import requests
 
 from abz import compat, config
+from abz.fingerprint import get_recordingids_for_file, has_acoustid
 
 config.load_settings()
 conn = sqlite3.connect(config.get_sqlite_file())
@@ -116,10 +117,14 @@ def process_file(filepath):
         if os.path.isfile(tmpname):
             try:
                 features = json.load(open(tmpname))
-                trackids = features["metadata"]["tags"]["musicbrainz_trackid"]
+                trackids = features["metadata"]["tags"].get("musicbrainz_trackid", [])
                 if not isinstance(trackids, list):
                     trackids = [trackids]
                 trs = [t for t in trackids if is_valid_uuid(t)]
+                if has_acoustid and not trs:
+                    trs = get_recordingids_for_file(filepath)
+                    if trs:
+                        features["metadata"]["tags"]["musicbrainz_trackid"] = trs
                 if trs:
                     recid = trs[0]
                     try:
